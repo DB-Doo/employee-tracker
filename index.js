@@ -1,20 +1,22 @@
-const inquirer = require('inquirer');
 // Import the models
+const inquirer = require('inquirer');
 const db = require('./db/connection');
 const consoleTable = require('console.table');
 const Department = require('./models/Department');
 const Role = require('./models/Role');
 const Employee = require('./models/Employee');
 
-// Instantiate the models
+// Instantiate the models to interact with the database
 const departmentModel = new Department();
 const roleModel = new Role();
 const employeeModel = new Employee();
 
+// Main function to start the application
+// Prompt user for action choice
 function start() {  inquirer.prompt([
     {
       type: 'list',
-      name: 'action',
+      name: 'action', // The answer will be stored under the 'action' key
       message: 'What would you like to do?',
       choices: [
         'View All Departments',
@@ -27,6 +29,8 @@ function start() {  inquirer.prompt([
         'Exit'
       ]
     }
+    // Handle user's choice using a switch statement
+    // Call appropriate function based on user's choice
   ]).then(answer => {
     switch (answer.action) {
       case 'View All Departments':
@@ -60,14 +64,14 @@ function start() {  inquirer.prompt([
     }
   });
 }
-
+// fetches department data from database and displays it using console.table
 function viewAllDepartments() {
   departmentModel.getAllDepartments()
     .then(([results]) => {
-      console.table(results);
-      start();
+      console.table(results); // Display the results in a table format
+      start(); // Return to the main menu after displaying the results
     })
-    .catch(err => console.error(err));
+    .catch(err => console.error(err)); // Catch any errors and log them to the console
 }
 
 function viewAllRoles() {
@@ -106,7 +110,7 @@ function addDepartment() {
 }
 
 function addRole() {
-  // This function will need to first fetch departments to list them as choices
+  // fetch departments and list them as choices
   departmentModel.getAllDepartments()
     .then(([departments]) => {
       inquirer.prompt([
@@ -124,12 +128,14 @@ function addRole() {
           name: 'departmentId',
           type: 'list',
           message: 'Which department does the role belong to?',
+          //  Map department data to format for inquirer choices
           choices: departments.map(department => ({
             name: department.name,
             value: department.id
           }))
         }
       ]).then(answer => {
+        // Use answers to add a new role to the database
         roleModel.addRole(answer.title, answer.salary, answer.departmentId)
           .then(() => {
             console.log('Role added successfully!');
@@ -142,7 +148,7 @@ function addRole() {
 }
 
 function addEmployee() {
-  // Fetch roles and employees to use as options
+  // Use Promise.all to fetch roles and employees concurrently
   Promise.all([
     roleModel.getAllRoles(),
     employeeModel.getAllEmployees()
@@ -162,15 +168,18 @@ function addEmployee() {
         name: 'roleId',
         type: 'list',
         message: 'What is the role of the new employee?',
+        //  Map department data to format for inquirer choices
         choices: roles.map(role => ({ name: role.title, value: role.id }))
       },
       {
         name: 'managerId',
         type: 'list',
+        // Provide option for no manager. Map employee data for other options
         message: 'Who is the manager of the new employee?',
         choices: [{ name: 'None', value: null }].concat(employees.map(employee => ({ name: employee.first_name + ' ' + employee.last_name, value: employee.id })))
       }
     ]).then(answers => {
+       // Use the answers to add new employee to database
       const { firstName, lastName, roleId, managerId } = answers;
       employeeModel.addEmployee(firstName, lastName, roleId, managerId)
         .then(() => {
@@ -182,6 +191,7 @@ function addEmployee() {
   }).catch(err => console.error(err));
 }
 
+// fetches employees then prompts user to select employee and new role
 function updateEmployeeRole() {
   // Fetch employees
   employeeModel.getAllEmployees()
@@ -191,6 +201,7 @@ function updateEmployeeRole() {
           name: 'employeeId',
           type: 'list',
           message: 'Which employee\'s role do you want to update?',
+          // mapping the data again for inquirer
           choices: employees.map(emp => ({ name: `${emp.first_name} ${emp.last_name}`, value: emp.id }))
         }
       ]).then(answer => {
